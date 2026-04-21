@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="description" content="Interdisciplinary Knowledge Network — Knowledge Network | MLKN.lab by François Papin">
+  <meta name="author" content="François Papin">
+  <meta http-equiv="X-Content-Type-Options" content="nosniff">
+  <meta http-equiv="X-Frame-Options" content="SAMEORIGIN">
+  <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
+  <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=()">
+  <title>Interdisciplinary Knowledge Network — Knowledge Network | MLKN.lab</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/style.css">
+  <style>
+    html, body { height: 100%; overflow: hidden; }
+    .map-page { display: flex; flex-direction: column; height: 100vh; }
+    .map-canvas-area { flex: 1; position: relative; overflow: hidden; }
+    #map-svg { display: block; width: 100%; height: 100%; }
+    @media (max-width: 600px) {
+      #legend-panel { max-height: 45vh; font-size: 10px; }
+    }
+  </style>
+</head>
+<body>
+  <header id="topnav" class="topnav" role="banner"></header>
+  <main class="map-page" id="main-content">
+    <div class="map-header" role="region" aria-label="Map header">
+      <div class="map-header-left">
+        <div class="map-accent-bar" id="accent-bar" aria-hidden="true"></div>
+        <div>
+          <div class="map-header-label">KNOWLEDGE NETWORK · GEPHI-STYLE · MLKN.lab</div>
+          <h1 class="map-header-title">Philosophy <span>— Academic Concepts</span></h1>
+        </div>
+      </div>
+      <div class="map-header-right">
+        <div class="search-wrapper" role="search" aria-label="Search concepts">
+          <label for="search-input" class="sr-only">Search concepts</label>
+          <input type="search" id="search-input" class="search-input" placeholder="search concepts…" autocomplete="off" spellcheck="false">
+          <span class="search-icon" aria-hidden="true">⌕</span>
+        </div>
+        <div class="map-meta" aria-label="Map statistics">
+          <div id="map-stats">— concepts · — links</div>
+          <div>François Papin · April 2026</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="map-canvas-area">
+      <div id="legend-panel" class="legend-panel" role="complementary" aria-label="Domain filter"></div>
+      <svg id="map-svg" aria-label="Interactive interdisciplinary knowledge network knowledge network graph" role="img"></svg>
+      <div id="detail-panel" class="detail-panel" hidden style="display:none;border-left:4px solid #1A6BAA;border:1.5px solid #E0EAFF" role="dialog" aria-label="Node details" aria-modal="false"></div>
+      <div id="hover-tooltip" class="hover-tooltip" hidden style="display:none" aria-hidden="true"></div>
+      <div id="map-footer" class="map-footer" aria-label="Attribution"></div>
+    </div>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"
+    integrity="sha512-M7nHCiNUOwFt6Us3r8alutZLm9qMt4s9951uo8jqO4UwJ1hziseL6O3ndFyigx6+LREfZqnhHxYjKRJ8ZQ69A=="
+    crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script src="../assets/mlkn.js"></script>
+  <script src="interdisciplinary-data.js"></script>
+  <script>
+    'use strict';
+    document.addEventListener('DOMContentLoaded', () => {
+      if (window.MLKN) window.MLKN.renderTopNav();
+      if (window.MLKN) window.MLKN.renderMapFooter('map-footer');
+      initMap(window.MAP_DATA);
+    });
+
+    function initMap(data) {
+      if (!data) return;
+
+      // Update header
+      document.querySelector('.map-header-title').innerHTML =
+        `${data.title} <span>— Academic Concepts</span>`;
+      document.title = `${data.title} — Knowledge Network | MLKN.lab`;
+      document.querySelector('meta[name="description"]').content =
+        `${data.title} — Knowledge Network | MLKN.lab by François Papin`;
+      document.getElementById('map-stats').textContent =
+        `${data.nodes.length} concepts · ${data.links.length} links`;
+
+      // Accent bar gradient
+      const colors = Object.values(data.clusters).map(c => c.color);
+      document.getElementById('accent-bar').style.background =
+        `linear-gradient(180deg,${colors.join(',')})`;
+
+      // Detail panel
+      const detail = window.MLKN.createDetailPanel({
+        panelId: 'detail-panel',
+        nodes: data.nodes,
+        clusters: data.clusters,
+        links: data.links,
+      });
+
+      // Hover tooltip
+      const tooltip = document.getElementById('hover-tooltip');
+      function showTooltip(node) {
+        if (!node) { tooltip.hidden = true; tooltip.style.display = 'none'; return; }
+        const cl = data.clusters[node.cluster];
+        tooltip.innerHTML = `${node.label || node.id}<span>${cl.label}</span>`;
+        tooltip.style.color = cl.color;
+        tooltip.style.borderColor = cl.color + '66';
+        tooltip.hidden = false;
+        tooltip.style.display = 'block';
+        tooltip.removeAttribute('hidden');
+      }
+
+      // Create map
+      const map = window.MLKN.createGephiMap({
+        svgId: 'map-svg',
+        nodes: data.nodes,
+        links: data.links,
+        clusters: data.clusters,
+        onNodeClick: (node) => {
+          detail.show(node);
+          if (!node) showTooltip(null);
+        },
+        onNodeHover: (node, isHover) => {
+          if (isHover) showTooltip(node);
+          else showTooltip(null);
+        },
+      });
+
+      // Legend
+      window.MLKN.buildLegend({
+        legendId: 'legend-panel',
+        clusters: data.clusters,
+        onFilter: (cluster) => {
+          map.filterByCluster(cluster);
+        },
+      });
+
+      // Search
+      const searchInput = document.getElementById('search-input');
+      let searchTimeout;
+      searchInput.addEventListener('input', () => {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+          map.filterBySearch(searchInput.value.trim());
+        }, 150);
+      });
+
+      // Close detail on Escape
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          detail.hide();
+          showTooltip(null);
+        }
+      });
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,21 @@
+# MLKN.lab — GitHub Pages Configuration
+# Author: François Papin | April 2026
+# https://francoispapin.github.io/
+
+title: "MLKN.lab"
+description: "MultiLayer Knowledge Network Ideas Laboratory — Interactive Gephi-style academic concept maps"
+author: "François Papin"
+baseurl: "/mlkn-lab"
+url: "https://francoispapin.github.io"
+
+# Exclude build artifacts
+exclude:
+  - generate_pages.py
+  - "*.py"
+  - "_template.html"
+  - "_data-schema.js"
+  - "*.jsx"
+  - node_modules/
+  - .git/
+
+# No Jekyll processing needed for static HTML
